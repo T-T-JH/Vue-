@@ -315,7 +315,7 @@ block + element + modifier
 BEM 命名约定的模式是：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码.block {}
+.block {}
 
 .block__element {}
 
@@ -328,7 +328,7 @@ javascript 体验AI代码助手 代码解读复制代码.block {}
   - `block--modifier` 代表 .block 的不同状态或不同版本。 使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定。如：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码.sub-block__element {}
+.sub-block__element {}
 
 .sub-block--modifier {}
 ```
@@ -340,7 +340,7 @@ BEM的关键是，可以获得更多的描述和更加清晰的结构，从其�
 常规的命名法示例：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码<div class="article">
+<div class="article">
     <div class="body">
         <button class="button-primary"></button>
         <button class="button-success"></button>
@@ -353,7 +353,6 @@ javascript 体验AI代码助手 代码解读复制代码<div class="article">
 使用了 BEM 命名方法的示例：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码
 <div class="article">
     <div class="article__body">
         <div class="tag"></div>
@@ -374,7 +373,7 @@ javascript 体验AI代码助手 代码解读复制代码
 - 比如只是一条公共的单独的样式，就没有使用 BEM 格式的意义：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码.hide {
+.hide {
     display: none !important;
 }
 ```
@@ -387,7 +386,6 @@ javascript 体验AI代码助手 代码解读复制代码.hide {
 > 以 LESS 为例：
 
 ```javascript
-javascript 体验AI代码助手 代码解读复制代码
 .article {
     max-width: 1200px;
     &__body {
@@ -399,5 +397,189 @@ javascript 体验AI代码助手 代码解读复制代码
         &--success {background: green;}
     }
 }
+```
+
+#### Layout
+
+在layout中分布着不同模块的文件夹<img src="C:\Users\Tu\AppData\Roaming\Typora\typora-user-images\image-20260127145438011.png" alt="image-20260127145438011" style="zoom:33%;" />
+
+在根目录下的`index.vue`下集成所有模块,每个模块在各自`index.vue`中定义自己的格式
+
+### 父子组件传参
+
+**父组件给子组件传参**
+
+父组件只需要传数据和监听事件
+
+```js
+<Child :title="msg" @update="handler" /> 			//在父组件上实现
+```
+
+子组件通过`defineProps`收取参数 
+
+```js
+<template>				
+    <div class="menu">
+        菜单区域 {{ title }}
+        <div>{{ data }}</div>
+    </div>
+</template>
+ 
+<script setup lang="ts">
+defineProps<{				//在子组件上实现
+    title:string,
+    data:number[]
+}>()
+</script>
+```
+
+withdefaults 默认参数 : 如果未传入对应参数则使用默认值
+
+```js
+type Props = {
+    title?: string,
+    data?: number[]
+}
+withDefaults(defineProps<Props>(), {     //泛型自变量模式
+    title: "张三",
+    data: () => [1, 2, 3]  
+})
+```
+
+**子组件给父组件传参**
+
+子组件通过`defineEmits`派发一个事件
+
+```js
+<template>
+    <div class="menu">
+        <button @click="clickTap">派发给父组件</button>
+    </div>
+</template>
+
+
+<script setup lang="ts">
+import { reactive } from 'vue'
+const list = reactive<number[]>([4, 5, 6])
+
+
+const emit = defineEmits(['on-click'])
+
+//如果用了ts可以这样两种方式
+// const emit = defineEmits<{
+//     (e: "on-click", name: string): void
+// }>()
+const clickTap = () => {
+    emit('on-click', list)
+}
+
+</script>
+```
+
+| 宏            | 在哪里写   | 作用                   |
+| :------------ | :--------- | :--------------------- |
+| `defineProps` | **子组件** | 声明"我能接收什么数据" |
+| `defineEmits` | **子组件** | 声明"我会发出什么事件" |
+| `v-bind`      | **父组件** | 传递数据给子组件       |
+| `v-on`        | **父组件** | 监听子组件事件         |
+
+### 全局组件
+
+在App.vue里使用`app.component('命名' , 引入的组件名称)`
+
+**批量引入**
+
+使用for循环实现
+
+### 递归组件
+
+通过`interface Tree`接口实现
+
+```js
+interface Tree{		//在Tree这个子组件中实现结构逻辑,调用<Tree><Tree/>实现递归,在主页面调用实现页面
+	name : string,				//<Tree><Tree/> 中调用v-if 判断子树是否是叶子节点
+	checked : boolean
+	children ?: Tree[]
+}
+```
+
+自定义命名: 
+
+- 自己在子组件中定义`script`
+- 使用第三方插件实现 `defineoptions`
+
+### 动态组件
+
+**`<component :is>` 语法**
+
+通过 `:is` 属性动态切换组件，组件实例会被缓存或销毁。
+
+```js
+<template>
+  <div>
+    <!-- 动态组件容器 -->
+    <component 
+      :is="currentComponent" 
+      :key="componentId"
+      title="传入的标题"
+      @confirm="handleConfirm"
+    />
+    
+    <!-- 切换按钮 -->
+    <button @click="switchTo('ComponentA')">显示A</button>
+    <button @click="switchTo('ComponentB')">显示B</button>
+  </div>
+</template>
+
+<script setup>
+import { ref, shallowRef } from 'vue'
+import ComponentA from './ComponentA.vue'
+import ComponentB from './ComponentB.vue'
+
+// 当前组件（可以是组件对象或组件名）
+const currentComponent = shallowRef(ComponentA)
+
+// 切换函数
+const switchTo = (name) => {
+  if (name === 'ComponentA') {
+    currentComponent.value = ComponentA
+  } else {
+    currentComponent.value = ComponentB
+  }
+}
+</script>
+```
+
+**`v-if/v-else` 条件渲染**
+
+通过条件判断控制组件的渲染/销毁
+
+```js
+<template>
+  <div>
+    <!-- 条件渲染 -->
+    <ComponentA 
+      v-if="showA" 
+      title="A的标题"
+      @confirm="handleConfirm"
+    />
+    <ComponentB 
+      v-else 
+      title="B的标题"
+      @confirm="handleConfirm"
+    />
+    
+    <!-- 切换按钮 -->
+    <button @click="showA = !showA">切换组件</button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import ComponentA from './ComponentA.vue'
+import ComponentB from './ComponentB.vue'
+
+const showA = ref(true)
+</script>
 ```
 
