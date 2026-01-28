@@ -385,7 +385,7 @@ BEM的关键是，可以获得更多的描述和更加清晰的结构，从其�
 
 > 以 LESS 为例：
 
-```javascript
+```css
 .article {
     max-width: 1200px;
     &__body {
@@ -417,7 +417,7 @@ BEM的关键是，可以获得更多的描述和更加清晰的结构，从其�
 
 子组件通过`defineProps`收取参数 
 
-```js
+```vue
 <template>				
     <div class="menu">
         菜单区域 {{ title }}
@@ -435,7 +435,7 @@ defineProps<{				//在子组件上实现
 
 withdefaults 默认参数 : 如果未传入对应参数则使用默认值
 
-```js
+```vue
 type Props = {
     title?: string,
     data?: number[]
@@ -450,7 +450,7 @@ withDefaults(defineProps<Props>(), {     //泛型自变量模式
 
 子组件通过`defineEmits`派发一个事件
 
-```js
+```vue
 <template>
     <div class="menu">
         <button @click="clickTap">派发给父组件</button>
@@ -495,7 +495,7 @@ const clickTap = () => {
 
 通过`interface Tree`接口实现
 
-```js
+```vue
 interface Tree{		//在Tree这个子组件中实现结构逻辑,调用<Tree><Tree/>实现递归,在主页面调用实现页面
 	name : string,				//<Tree><Tree/> 中调用v-if 判断子树是否是叶子节点
 	checked : boolean
@@ -514,7 +514,7 @@ interface Tree{		//在Tree这个子组件中实现结构逻辑,调用<Tree><Tree
 
 通过 `:is` 属性动态切换组件，组件实例会被缓存或销毁。
 
-```js
+```vue
 <template>
   <div>
     <!-- 动态组件容器 -->
@@ -554,7 +554,7 @@ const switchTo = (name) => {
 
 通过条件判断控制组件的渲染/销毁
 
-```js
+```vue
 <template>
   <div>
     <!-- 条件渲染 -->
@@ -583,3 +583,177 @@ const showA = ref(true)
 </script>
 ```
 
+### 插槽  `<slot>`
+
+`v-slot` 具名插槽
+
+**多个插槽位置**：子组件有多个 `<slot>`，父组件通过 `v-slot` 指定内容放到哪里。
+
+```vue
+<template>
+  <div class="layout">
+    <header>
+      <slot name="header">			//子组件自己定义标识符
+        <!-- 默认头部 -->
+        <h1>默认标题</h1>
+      </slot>
+    </header>
+    
+    <main>
+      <slot></slot>  <!-- 默认插槽 -->
+    </main>
+    
+    <footer>
+      <slot name="footer"></slot>
+    </footer>
+    
+    <!-- 具名插槽可以带数据 -->
+    <slot name="actions" :close="closeModal"></slot>
+  </div>
+</template>
+
+<script setup>
+const closeModal = () => {
+  console.log('关闭弹窗')
+}
+</script>
+```
+
+```vue
+<template>
+  <Layout>
+    <!-- 具名插槽 v-slot:名称 -->
+    <template v-slot:header>		//把数据插入定义好的标识符header
+      <h1>自定义标题</h1>
+      <p>副标题</p>
+    </template>
+    
+    <!-- 缩写语法：#名称 -->
+    <template #footer>
+      <p>版权信息 © 2024</p>
+    </template>
+    
+    <!-- 作用域插槽：接收子组件数据 -->
+    <template #actions="{ close }">
+      <button @click="close">关闭</button>
+    </template>
+  </Layout>
+</template>
+```
+
+并且子组件可以通过`v-for`实现在父组件中输出遍历后的数据
+
+```js
+<div v-for "items : data">
+	<slot : data = "item"></slot>
+</div>
+```
+
+### 异步组件
+
+Vue 异步组件是**按需加载**的组件，只有在需要渲染时才会从服务器加载对应的代码，有效减少首屏加载体积
+
+`Suspense` 是 Vue 3 内置组件，专门处理异步组件的加载状态，更声明式。
+
+```vue
+<template>
+  <button @click="showModal = true">打开弹窗</button>
+
+  <!-- Suspense 包裹异步组件 -->
+  <Suspense v-if="showModal">
+    <!-- 异步组件加载成功后的内容 -->
+    <template #default>
+      <AsyncModal @close="showModal = false" />
+    </template>
+    
+    <!-- 加载中状态 -->
+    <template #fallback>
+      <div class="loading-modal">
+        <SpinningLoader />
+        <p>正在加载弹窗...</p>
+      </div>
+    </template>
+  </Suspense>
+</template>
+
+<script setup>
+import { ref, defineAsyncComponent } from 'vue'
+
+const showModal = ref(false)
+
+// 定义异步组件
+const AsyncModal = defineAsyncComponent(() => 
+  import('./Modal.vue')
+)
+</script>
+```
+
+### `Teleport`
+
+vue自带的组件,用于将**子组件的 DOM 结构**渲染到**组件模板之外的指定位置**,常用于模态框、提示框等需要脱离父级样式层叠的 UI 元素(可用于视图的位置变更)
+
+```vue
+<teleport to="目标选择器">
+  <!-- 这里的 DOM 会被移动到目标位置 -->
+</teleport>
+```
+
+```vue
+<Teleport : disabled = "false"  to = "body" > //disabled为true的时候,忽略to的值
+<><>
+</Teleport>
+```
+
+### `Keep-alive` 
+
+vue自带组件,用于页面**缓存**,可以通过`include`定义需要缓存的页面
+
+`max = 10` 允许10个缓存页面,如果有更多的页面需要缓存,使用lru算法替换
+
+### `translation` 动画组件
+
+### 组合式API
+
+组合式API实现代码复用的核心是 **"可组合函数"（Composables）** ——将可复用逻辑抽离成独立的函数，在多个组件中调用。
+
+```js
+// hooks/useCounter.js
+export function useCounter(initialValue = 0) { 
+  const count = ref(initialValue);  // 一个 ref
+  
+  function increment() {
+    count.value++;
+  }
+  
+  function decrement() {
+    count.value--;
+  }
+  
+  // 返回一个对象，包装多种数据类型
+  return {
+    count,        // ref
+    increment,    // 函数
+    decrement     // 函数
+  };
+}
+```
+
+在组件中怎么使用 : 返回的数据类型,无论是函数还是数据,都能够在组件中被单独调用
+
+```vue
+<script setup>
+import { useCounter } from '@/hooks/useCounter';
+
+// 调用可组合函数，获取所有返回值
+const { count, increment, decrement } = useCounter(10);
+</script>
+
+<template>
+  <p>{{ count }}</p>
+  <button @click="increment">+</button>
+</template>
+```
+
+### Proxy 配置跨域
+
+在配置文件中,将需要跨的域封装为"/api"或自定义格式,在组件中使用"/api/xxx"即可跨域访问
